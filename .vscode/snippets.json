@@ -1,0 +1,13 @@
+{
+  "html": {
+    "abbreviations": {
+      ",": "[className={cn(\"${1}\")}]",
+      "for": "for (var ${class} = 0; i < ${id}.length; ${class}++) {\n\t|}"
+    },
+    "snippets": {
+      ",": "<div className={cn('')}>$0</div>",
+      "cn": "{cn('$0')}",
+      "icn": "import { cn } from '@/lib/utils'"
+    }
+  }
+}

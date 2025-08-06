@@ -1,0 +1,16 @@
+{
+  "typescriptreact": {
+    "abbreviation": {
+      "a": "<a href=\"\">",
+      "link": "<link rel=\"stylesheet\" href=\"\" />",
+      ".": "<div className={cn('')}>$0</div>",
+      "cn": "{cn('$0')}",
+      "icn": "import { cn } from '@/lib/utils'"
+    },
+    "snippets": {
+      ".": "<div className={cn('')}>$0</div>",
+      "cn": "{cn('$0')}",
+      "icn": "import { cn } from '@/lib/utils'"
+    }
+  }
+}

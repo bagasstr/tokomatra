@@ -1,0 +1,17 @@
+{
+  "WillLuke.nextjs.addTypesOnSave": true,
+  "WillLuke.nextjs.hasPrompted": true,
+  "emmet.extensionsPath": ["D:\\project\\tokomatra\\tokomatra\\.vscode"],
+  "emmet.preferences": {
+    "jsx.enabled": true,
+    "tsx.enabled": true,
+    "typescriptreact.enabled": true
+  },
+  "emmet.variables": {
+    "className": "className={cn(\"\")}"
+  },
+  "emmet.includeLanguages": {
+    "javascript": "javascriptreact",
+    "typescript": "typescriptreact"
+  }
+}

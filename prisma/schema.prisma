@@ -1,0 +1,336 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model address {
+  id_address    String   @id @db.VarChar(36)
+  userId        String   @db.VarChar(36)
+  recipientName String?  @db.VarChar(100)
+  labelAddress  String?  @db.VarChar(50)
+  address       String?
+  city          String?  @db.VarChar(50)
+  province      String?  @db.VarChar(50)
+  district      String?  @db.VarChar(50)
+  village       String?  @db.VarChar(50)
+  postalCode    String?  @db.VarChar(10)
+  isPrimary     Boolean  @default(false)
+  isActive      Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime
+  users         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders        orders[]
+}
+
+model brands {
+  id_brand  String     @id @db.VarChar(36)
+  name      String     @db.VarChar(100)
+  logo      String?
+  slug      String     @unique @db.VarChar(100)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime
+  products  products[]
+}
+
+model cart_items {
+  id_cartItem String   @id @db.VarChar(36)
+  cartId      String   @db.VarChar(36)
+  productId   String   @db.VarChar(36)
+  quantity    Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime
+  carts       carts    @relation(fields: [cartId], references: [id_cart], onDelete: Cascade)
+  products    products @relation(fields: [productId], references: [id_product], onDelete: Cascade)
+}
+
+model carts {
+  id_cart    String       @id @db.VarChar(36)
+  userId     String       @db.VarChar(36)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime
+  cart_items cart_items[]
+  users      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model categories {
+  id_category String       @id @db.VarChar(36)
+  name        String       @db.VarChar(100)
+  slug        String       @unique @db.VarChar(100)
+  description String?
+  icon        String?
+  imageUrl    String?
+  isActive    Boolean      @default(true)
+  parentId    String?      @db.VarChar(36)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime
+  categories  categories?  @relation("categoriesTocategories", fields: [parentId], references: [id_category])
+  children    categories[] @relation("categoriesTocategories")
+  products    products[]
+}
+
+model notifications {
+  id_notification String   @id @db.VarChar(36)
+  email           String?  @db.VarChar(36)
+  title           String?  @db.VarChar(255)
+  message         String?
+  isRead          Boolean? @default(false)
+  createdAt       DateTime @default(now())
+  users           User?    @relation(fields: [email], references: [email], onDelete: Cascade)
+}
+
+model order_items {
+  id_orderItem String   @id @db.VarChar(36)
+  orderId      String   @db.VarChar(36)
+  productId    String   @db.VarChar(36)
+  quantity     Int
+  price        Int
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime
+  orders       orders   @relation(fields: [orderId], references: [id_order], onDelete: Cascade)
+  products     products @relation(fields: [productId], references: [id_product], onDelete: Cascade)
+}
+
+model orders {
+  id_order       String        @id @db.VarChar(36)
+  userId         String        @db.VarChar(36)
+  status         OrderStatus   @default(PENDING)
+  totalAmount    Int
+  subtotalAmount Int?
+  addressId      String        @db.VarChar(36)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime
+  notes          String?       @db.VarChar(255)
+  order_items    order_items[]
+  address        address       @relation(fields: [addressId], references: [id_address], onDelete: Cascade)
+  users          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payments       payments[]
+  shipments      shipments?
+}
+
+model payments {
+  id_payment        String    @id @db.VarChar(36)
+  orderId           String    @db.VarChar(36)
+  amount            Int
+  paymentMethod     String    @db.VarChar(50)
+  paymentType       String?   @db.VarChar(50)
+  transactionId     String?   @db.VarChar(100)
+  transactionTime   DateTime?
+  transactionStatus String?   @db.VarChar(50)
+  fraudStatus       String?   @db.VarChar(50)
+  bank              String?   @db.VarChar(50)
+  vaNumber          String?   @db.VarChar(50)
+  approvalCode      String?   @db.VarChar(50)
+  currency          String?   @default("IDR") @db.VarChar(10)
+  status            String    @db.VarChar(50)
+  rawResponse       Json?
+  paidAt            DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime
+  orders            orders    @relation(fields: [orderId], references: [id_order], onDelete: Cascade)
+}
+
+model products {
+  id_product     String           @id @db.VarChar(36)
+  sku            String           @unique @db.VarChar(50)
+  name           String           @db.VarChar(255)
+  slug           String           @unique @db.VarChar(255)
+  description    String?
+  label          String?          @db.VarChar(50)
+  images         String[]
+  sellingPrice   Int
+  purchasePrice  Int
+  unit           String           @db.VarChar(20)
+  stock          Int              @default(0)
+  minOrder       Int              @default(0)
+  multiOrder     Int              @default(0)
+  weight         Float?
+  dimensions     String?          @db.VarChar(50)
+  isFeatured     Boolean          @default(false)
+  isActive       Boolean          @default(true)
+  categoryId     String           @db.VarChar(36)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime
+  brandId        String?          @db.VarChar(36)
+  userId         String?          @db.VarChar(36)
+  cart_items     cart_items[]
+  order_items    order_items[]
+  brands         brands?          @relation(fields: [brandId], references: [id_brand], onDelete: Cascade)
+  categories     categories       @relation(fields: [categoryId], references: [id_category], onDelete: Cascade)
+  users          User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shipment_items shipment_items[]
+  wishlists      wishlists?
+
+  @@index([categoryId])
+  @@index([slug])
+}
+
+model profile {
+  id_profile  String   @id @db.VarChar(36)
+  userId      String   @unique @db.VarChar(36)
+  fullName    String?  @db.VarChar(100)
+  imageUrl    String?
+  phoneNumber String?  @unique @db.VarChar(20)
+  email       String?  @db.VarChar(255)
+  userName    String?  @db.VarChar(50)
+  gender      String?  @db.VarChar(10)
+  dateOfBirth String?  @db.VarChar(20)
+  bio         String?
+  companyName String?  @db.VarChar(100)
+  taxId       String?  @db.VarChar(50)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime
+  users       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model shipment_items {
+  id_shipmentItem String    @id @db.VarChar(36)
+  shipmentId      String    @db.VarChar(36)
+  productId       String    @db.VarChar(36)
+  quantity        Int
+  unit            String    @db.VarChar(20)
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime
+  products        products  @relation(fields: [productId], references: [id_product])
+  shipments       shipments @relation(fields: [shipmentId], references: [id_shipment], onDelete: Cascade)
+}
+
+model shipments {
+  id_shipment    String           @id @db.VarChar(36)
+  orderId        String           @unique @db.VarChar(36)
+  deliveryNumber String           @unique @db.VarChar(50)
+  deliveryDate   DateTime
+  notes          String?
+  status         String           @default("PENDING") @db.VarChar(50)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime
+  shipment_items shipment_items[]
+  orders         orders           @relation(fields: [orderId], references: [id_order], onDelete: Cascade)
+}
+
+model wishlists {
+  id_wishlist String   @id @db.VarChar(36)
+  userId      String   @db.VarChar(36)
+  productId   String   @unique @db.VarChar(36)
+  products    products @relation(fields: [productId], references: [id_product], onDelete: Cascade)
+  users       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String          @id
+  name          String
+  email         String
+  emailVerified Boolean
+  image         String?
+  role          String?
+  typeUser      String?
+  createdAt     DateTime
+  updatedAt     DateTime
+  sessions      Session[]
+  accounts      Account[]
+  address       address[]
+  carts         carts[]
+  notifications notifications[]
+  orders        orders[]
+  products      products[]
+  profile       profile[]
+  wishlists     wishlists[]
+
+  banned     Boolean?
+  banReason  String?
+  banExpires DateTime?
+
+  @@unique([email])
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String
+  createdAt DateTime
+  updatedAt DateTime
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  impersonatedBy String?
+
+  @@unique([token])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime
+  updatedAt             DateTime
+
+  @@map("account")
+}
+
+model Verification {
+  id         String    @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime?
+  updatedAt  DateTime?
+
+  @@map("verification")
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  BANK_TRANFER
+  E_WALLET
+  VIRTUAL_ACCOUNT
+  QR_CODE
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  CANCELLED
+}
+
+enum TransactionStatus {
+  capture
+  settlement
+  pending
+  deny
+  cancel
+  expire
+  failure
+  refund
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  CUSTOMER
+}
