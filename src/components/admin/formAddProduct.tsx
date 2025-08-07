@@ -35,12 +35,13 @@ import {
 import { Switch } from '@/components/ui/switch'
 import { formAddProductSchema } from '@/lib/validation'
 import Link from 'next/link'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { Category, CategorySelector } from '@/components/categorySelector'
 
 const FormAddProduct = () => {
   const [files, setFiles] = useState<File[] | null>(null)
+  const [isUploading, setIsUploading] = useState(false)
   const router = useRouter()
   const [slugEdited, setSlugEdited] = useState(false)
 
@@ -55,29 +56,33 @@ const FormAddProduct = () => {
     { value: 'suplier', label: 'Suplier' },
   ]
 
-  const categories = [
-    {
-      id: 1,
-      name: 'Elektronik',
-      children: [
-        { id: 2, name: 'Laptop' },
-        { id: 3, name: 'Handphone' },
-      ],
-    },
-    {
-      id: 4,
-      name: 'Pakaian',
-      children: [
-        {
-          id: 5,
-          name: 'Pria',
-        },
-      ],
-    },
-  ]
+  const { data: categories } = useQuery({
+    queryKey: ['categories'],
+    queryFn: () => fetch('/api/categories').then((res) => res.json()),
+  })
+
   const form = useForm<z.infer<typeof formAddProductSchema>>({
     resolver: zodResolver(formAddProductSchema),
-    defaultValues: {},
+    defaultValues: {
+      sku: '',
+      name: '',
+      slug: '',
+      description: '',
+      label: '',
+      categoryId: '',
+      brandId: '',
+      dimensions: '',
+      sellingPrice: '',
+      purchasePrice: '',
+      stock: '',
+      unit: '',
+      minOrder: '',
+      multiOrder: '',
+      weight: '',
+      images: [],
+      featured: false,
+      isActive: true,
+    },
     mode: 'onChange',
   })
 
@@ -87,6 +92,28 @@ const FormAddProduct = () => {
       .replace(/[^a-z0-9\s-]/g, ' ')
       .trim()
       .replace(/\s+/g, '-')
+  }
+
+  const addAploadImage = async (file: File): Promise<string> => {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const response = await fetch('/api/uploadProduk', {
+      method: 'POST',
+      body: formData,
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to upload image')
+    }
+
+    const data = await response.json()
+    return data.url || data.imageUrl // Adjust based on your upload API response
+  }
+
+  const uploadImages = async (files: File[]): Promise<string[]> => {
+    const uploadPromises = files.map((file) => addAploadImage(file))
+    return Promise.all(uploadPromises)
   }
 
   useEffect(() => {
@@ -104,19 +131,48 @@ const FormAddProduct = () => {
   }
 
   const mutation = useMutation({
-    mutationFn: (values: z.infer<typeof formAddProductSchema>) => {
-      return fetch('/api/products', {
-        method: 'POST',
-        body: JSON.stringify(values),
-      })
-    },
+    mutationFn: async (values: z.infer<typeof formAddProductSchema>) => {
+      setIsUploading(true)
 
+      try {
+        // Upload images first if files are selected
+        let imageUrls: string[] = []
+        if (files && files.length > 0) {
+          imageUrls = await uploadImages(files)
+        }
+
+        // Include uploaded images in the form data
+        const formDataWithImages = {
+          ...values,
+          images: imageUrls,
+        }
+
+        console.log('Submitting form data:', formDataWithImages)
+
+        const response = await fetch('/api/product', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(formDataWithImages),
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || 'Failed to create product')
+        }
+
+        return response.json()
+      } finally {
+        setIsUploading(false)
+      }
+    },
     onSuccess: () => {
       toast.success('Produk berhasil ditambahkan')
       router.push('/dashboard/produk')
     },
-    onError: (error) => {
-      toast.error(error.message)
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to create product')
     },
   })
 
@@ -128,6 +184,8 @@ const FormAddProduct = () => {
       toast.error('Failed to submit the form. Please try again.')
     }
   }
+
+  const categoryId = form.watch('categoryId')
 
   return (
     <div className={cn('')}>
@@ -176,6 +234,7 @@ const FormAddProduct = () => {
                     placeholder='Slug'
                     type='text'
                     {...field}
+                    disabled
                     onChange={(e) => handleSlugChange(e)}
                   />
                 </FormControl>
@@ -410,6 +469,8 @@ const FormAddProduct = () => {
               />
             </div>
           </div>
+
+          {/* Image Upload Section */}
           <FormField
             control={form.control}
             name='images'
@@ -432,7 +493,7 @@ const FormAddProduct = () => {
                           &nbsp; or drag and drop
                         </p>
                         <p className='text-xs text-gray-500 dark:text-gray-400'>
-                          SVG, PNG, JPG or GIF
+                          SVG, PNG, JPG or GIF (Max 4MB each)
                         </p>
                       </div>
                     </FileInput>
@@ -449,12 +510,14 @@ const FormAddProduct = () => {
                   </FileUploader>
                 </FormControl>
                 <FormDescription>
-                  File harus berupa gambar. PNG, JPG, JPEG
+                  File akan diupload ke server saat form disubmit. PNG, JPG,
+                  JPEG (Maksimal 4MB per file)
                 </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
           />
+
           <FormField
             control={form.control}
             name='featured'
@@ -470,21 +533,46 @@ const FormAddProduct = () => {
                   <Switch
                     checked={field.value}
                     onCheckedChange={field.onChange}
-                    disabled
-                    aria-readonly
                   />
                 </FormControl>
               </FormItem>
             )}
           />
+
+          <FormField
+            control={form.control}
+            name='isActive'
+            render={({ field }) => (
+              <FormItem className='flex flex-row items-center justify-between rounded-lg border p-4'>
+                <div className='space-y-0.5'>
+                  <FormLabel>Status Aktif</FormLabel>
+                  <FormDescription>
+                    Aktifkan produk untuk ditampilkan
+                  </FormDescription>
+                </div>
+                <FormControl>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+
           <div className='flex justify-end gap-2'>
             <Link href='/dashboard/produk'>
               <Button type='button' variant='outline' className=''>
                 Batal
               </Button>
             </Link>
-            <Button type='submit' className='' disabled={mutation.isPending}>
-              {mutation.isPending ? 'Menambahkan...' : 'Tambah Produk'}
+            <Button
+              type='submit'
+              className=''
+              disabled={mutation.isPending || isUploading}>
+              {mutation.isPending || isUploading
+                ? 'Menambahkan...'
+                : 'Tambah Produk'}
             </Button>
           </div>
         </form>

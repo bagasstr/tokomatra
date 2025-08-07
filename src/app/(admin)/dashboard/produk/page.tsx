@@ -30,11 +30,21 @@ import {
   TableCell,
 } from '@/components/ui/table'
 import { cn } from '@/lib/utils'
+import { useQuery } from '@tanstack/react-query'
 import { Edit, Eye, MoreHorizontal, Plus, Trash } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 
 const ProdukPage = () => {
+  const { data, isLoading } = useQuery({
+    queryKey: ['products'],
+    queryFn: async () => {
+      const response = await fetch('/api/product')
+      const data = await response.json()
+      return data
+    },
+  })
+  console.log(data)
   return (
     <div className={cn('py-6')}>
       <Header>
@@ -69,51 +79,55 @@ const ProdukPage = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            <TableRow>
-              <TableCell className='h-full '>
-                <Checkbox />
-              </TableCell>
-              <TableCell className=''>
-                <Image
-                  src={'/logo.png'}
-                  alt='gambar'
-                  width={50}
-                  height={50}
-                  style={{ objectFit: 'contain' }}
-                  className='rounded-md'
-                />
-              </TableCell>
-              <TableCell>GMB001</TableCell>
-              <TableCell>Gambar</TableCell>
-              <TableCell>image</TableCell>
-              <TableCell>Rp. 100.000</TableCell>
-              <TableCell>Rp. 80.000</TableCell>
-              <TableCell>100</TableCell>
-              <TableCell>Aktif</TableCell>
-              <TableCell>
-                <DropdownMenu>
-                  <DropdownMenuTrigger>
-                    <MoreHorizontal className='size-4' />
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align='end'>
-                    <DropdownMenuLabel>Aksi</DropdownMenuLabel>
-                    <DropdownMenuItem>
-                      <Eye className='size-4' />
-                      Lihat
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <Edit className='size-4' />
-                      Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem>
-                      <Trash className='size-4' />
-                      Hapus
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </TableCell>
-            </TableRow>
+            {data?.products.map((product: any) => (
+              <TableRow key={product.id_product}>
+                <TableCell className='h-full '>
+                  <Checkbox />
+                </TableCell>
+                <TableCell className=''>
+                  <Image
+                    src={product.images[0] || '/logo.png'}
+                    alt='gambar'
+                    width={50}
+                    height={50}
+                    style={{ objectFit: 'contain' }}
+                    className='rounded-md'
+                  />
+                </TableCell>
+                <TableCell>{product.sku}</TableCell>
+                <TableCell>{product.name}</TableCell>
+                <TableCell>{product.categories.name}</TableCell>
+                <TableCell>Rp. {product.sellingPrice}</TableCell>
+                <TableCell>Rp. {product.purchasePrice}</TableCell>
+                <TableCell>{product.stock}</TableCell>
+                <TableCell>
+                  {product.isActive ? 'Aktif' : 'Tidak Aktif'}
+                </TableCell>
+                <TableCell>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger>
+                      <MoreHorizontal className='size-4' />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align='end'>
+                      <DropdownMenuLabel>Aksi</DropdownMenuLabel>
+                      <DropdownMenuItem>
+                        <Eye className='size-4' />
+                        Lihat
+                      </DropdownMenuItem>
+                      <DropdownMenuItem>
+                        <Edit className='size-4' />
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem>
+                        <Trash className='size-4' />
+                        Hapus
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              </TableRow>
+            ))}
           </TableBody>
         </Table>
         <div className={cn('mt-6')}>

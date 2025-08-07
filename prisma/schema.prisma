@@ -61,13 +61,10 @@ model categories {
   id_category String       @id @db.VarChar(36)
   name        String       @db.VarChar(100)
   slug        String       @unique @db.VarChar(100)
-  description String?
-  icon        String?
-  imageUrl    String?
-  isActive    Boolean      @default(true)
   parentId    String?      @db.VarChar(36)
+  image       String?
   createdAt   DateTime     @default(now())
-  updatedAt   DateTime
+  updatedAt   DateTime     @default(now())
   categories  categories?  @relation("categoriesTocategories", fields: [parentId], references: [id_category])
   children    categories[] @relation("categoriesTocategories")
   products    products[]

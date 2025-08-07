@@ -57,8 +57,8 @@ export const formAddProductSchema = z.object({
   sku: z.string('SKU wajib diisi'),
   name: z.string('Nama produk wajib diisi'),
   slug: z.string('Slug wajib diisi'),
-  description: z.string('Deskripsi wajib diisi'),
-  label: z.string('Label wajib diisi'),
+  description: z.string().optional(),
+  label: z.string().optional(),
   categoryId: z.string().min(1, 'Kategori harus dipilih'),
   brandId: z.string().optional(),
   dimensions: z.string().optional(),
@@ -133,7 +133,8 @@ export const formAddProductSchema = z.object({
       })
     }
   }),
-  weight: z.string('Berat wajib diisi'),
-  images: z.string('Gambar wajib diisi'),
-  featured: z.boolean(),
+  weight: z.string().optional(),
+  images: z.array(z.string()).optional(),
+  featured: z.boolean().optional(),
+  isActive: z.boolean().optional(),
 })

@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { randomUUID } from 'crypto'
 import { headers } from 'next/headers'
 import { NextResponse } from 'next/server'
 
@@ -27,6 +28,16 @@ export const GET = async (req: Request) => {
 
     // Ambil data paginasi
     const categories = await prisma.categories.findMany({
+      where: {
+        parentId: null, // Only get root categories
+      },
+      include: {
+        children: {
+          include: {
+            children: true,
+          },
+        },
+      },
       orderBy: {
         createdAt: 'desc',
       },
@@ -42,13 +53,7 @@ export const GET = async (req: Request) => {
     }
 
     // Tetap return data walaupun categories kosong
-    return NextResponse.json({
-      categories,
-      totalCategories,
-      totalPages,
-      currentPage: page,
-      perPage: limit,
-    })
+    return NextResponse.json(categories)
   } catch (error) {
     console.error('[GET_CATEGORIES]', error)
     return NextResponse.json(
@@ -69,45 +74,51 @@ export const POST = async (req: Request) => {
     ) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    const { searchParams } = new URL(req.url)
+    const parentId = searchParams.get('parentId')
 
     const body = await req.json()
-    // const {
-    //   sku,
-    //   name,
-    //   slug,
-    //   description,
-    //   label,
-    //   images,
-    //   sellingPrice,
-    //   purchasePrice,
-    //   unit,
-    //   stock,
-    //   minOrder,
-    //   multiOrder,
-    //   weight,
-    //   dimensions,
-    //   isFeatured,
-    //   isActive,
-    //   categoryId,
-    //   brandId,
-    //   userId,
-    // } = body
+
     if (!body) {
       return NextResponse.json({ message: 'Form is required' }, { status: 400 })
     }
 
-    const category = await prisma.categories.create({
-      data: {
-        ...body,
-        userId: session?.user.id,
-      },
-    })
+    const slug = body.name.toLowerCase().replace(/ /g, '-')
 
-    if (!category) {
-      return NextResponse.json(
-        { error: 'Failed to create category' },
-        { status: 400 }
-      )
+    // If parentId is present, create a subcategory with parentId
+    if (parentId) {
+      const existingCategory = await prisma.categories.findFirst({
+        where: {
+          id_category: parentId,
+        },
+      })
+      if (!existingCategory) {
+        return NextResponse.json(
+          { error: 'Parent category not found' },
+          { status: 404 }
+        )
+      }
+      await prisma.categories.create({
+        data: {
+          id_category: randomUUID(),
+          name: body.name,
+          slug: slug,
+          parentId: parentId,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      })
+    } else {
+      // If no parentId, create a root category
+      await prisma.categories.create({
+        data: {
+          id_category: randomUUID(),
+          name: body.name,
+          slug: slug,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      })
     }
 
     return NextResponse.json({

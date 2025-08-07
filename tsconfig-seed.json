@@ -12,5 +12,5 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["adminSeed.ts"]
+  "include": ["adminSeed.ts", "categorySeed.ts"]
 }
