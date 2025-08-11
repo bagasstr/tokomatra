@@ -65,13 +65,13 @@ export const formAddProductSchema = z.object({
   sellingPrice: z.string().superRefine((val, ctx) => {
     if (val === '') {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: 'custom',
         message: 'Harga harus diisi',
       })
     }
     if (isNaN(Number(val))) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: 'custom',
         message: 'Harga harus berupa angka',
       })
     }
@@ -79,13 +79,13 @@ export const formAddProductSchema = z.object({
   purchasePrice: z.string().superRefine((val, ctx) => {
     if (val === '') {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: 'custom',
         message: 'Harga harus diisi',
       })
     }
     if (isNaN(Number(val))) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: 'custom',
         message: 'Harga harus berupa angka',
       })
     }
@@ -93,13 +93,13 @@ export const formAddProductSchema = z.object({
   stock: z.string().superRefine((val, ctx) => {
     if (val === '') {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: 'custom',
         message: 'Stok harus diisi',
       })
     }
     if (isNaN(Number(val))) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: 'custom',
         message: 'Stok harus berupa angka',
       })
     }
@@ -108,13 +108,13 @@ export const formAddProductSchema = z.object({
   minOrder: z.string().superRefine((val, ctx) => {
     if (val === '') {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: 'custom',
         message: 'Minimal order harus diisi',
       })
     }
     if (isNaN(Number(val))) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: 'custom',
         message: 'Minimal order harus berupa angka',
       })
     }
@@ -122,13 +122,13 @@ export const formAddProductSchema = z.object({
   multiOrder: z.string().superRefine((val, ctx) => {
     if (val === '') {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: 'custom',
         message: 'Kelipatan order harus diisi',
       })
     }
     if (isNaN(Number(val))) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: 'custom',
         message: 'Kelipatan order harus berupa angka',
       })
     }
@@ -137,4 +137,62 @@ export const formAddProductSchema = z.object({
   images: z.array(z.string()).optional(),
   featured: z.boolean().optional(),
   isActive: z.boolean().optional(),
+})
+
+export const formAddCategorySchema = z.object({
+  name: z.string().min(1, 'Nama kategori wajib diisi'),
+  parentId: z.string().optional(),
+})
+
+export const formEditProfileAdminSchema = z.object({
+  fullName: z.string().min(1, { error: 'Nama lengkap wajib diisi' }),
+  userName: z.string().min(1, { error: 'Username wajib diisi' }),
+
+  phoneNumber: z.string().superRefine((val, ctx) => {
+    if (val === '') {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Nomor telepon wajib diisi',
+        input: val,
+      })
+    }
+    if (val.length < 10) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Nomor telepon harus 12 digit',
+        input: val,
+      })
+    }
+    if (isNaN(Number(val))) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Nomor telepon harus berupa angka',
+        input: val,
+      })
+    }
+  }),
+  taxId: z.string().superRefine((val, ctx) => {
+    if (val === '') {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'NPWP harus diisi',
+        input: val,
+      })
+    }
+    if (val.length < 10) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'NPWP harus 16 digit',
+        input: val,
+      })
+    }
+    if (isNaN(Number(val))) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'NPWP harus berupa angka',
+        input: val,
+      })
+    }
+  }),
+  imageUrl: z.string().optional(),
 })

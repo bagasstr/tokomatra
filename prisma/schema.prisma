@@ -75,9 +75,11 @@ model notifications {
   email           String?  @db.VarChar(36)
   title           String?  @db.VarChar(255)
   message         String?
+  role            String?
+  id_user         String?
   isRead          Boolean? @default(false)
   createdAt       DateTime @default(now())
-  users           User?    @relation(fields: [email], references: [email], onDelete: Cascade)
+  users           User?    @relation(fields: [id_user, role], references: [id, role], onDelete: Cascade)
 }
 
 model order_items {
@@ -242,7 +244,7 @@ model User {
   banReason  String?
   banExpires DateTime?
 
-  @@unique([email])
+  @@unique([id, role])
   @@map("user")
 }
 

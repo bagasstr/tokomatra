@@ -21,8 +21,11 @@ import {
   ChevronDown,
   Home,
   LayoutDashboard,
+  LayoutList,
   Package,
+  PackageSearch,
   ShoppingCart,
+  Tag,
   User,
   UserCog,
   Users,
@@ -129,7 +132,7 @@ export function AppSidebar() {
                   />
                 </SidebarMenuButton>
                 {openGroups.products && (
-                  <div className='pl-8 mt-2 space-y-2'>
+                  <div className='pl-4 mt-2 space-y-2'>
                     <SidebarMenuButton
                       variant={'default'}
                       isActive={pathname === '/dashboard/produk'}
@@ -138,6 +141,7 @@ export function AppSidebar() {
                       <Link
                         href='/dashboard/produk'
                         className='block text-sm hover:text-primary'>
+                        <PackageSearch className='h-4 w-4' />
                         Daftar Produk
                       </Link>
                     </SidebarMenuButton>
@@ -149,6 +153,7 @@ export function AppSidebar() {
                       <Link
                         href='/dashboard/produk/kategori'
                         className='block text-sm hover:text-primary'>
+                        <LayoutList className='h-4 w-4' />
                         Kategori
                       </Link>
                     </SidebarMenuButton>
@@ -160,6 +165,7 @@ export function AppSidebar() {
                       <Link
                         href='/dashboard/produk/merek'
                         className='block text-sm hover:text-primary'>
+                        <Tag className='h-4 w-4' />
                         Merek
                       </Link>
                     </SidebarMenuButton>
@@ -199,8 +205,8 @@ export function AppSidebar() {
                   />
                 </SidebarMenuButton>
                 {openGroups.users && (
-                  <div className='pl-8 mt-2 space-y-2'>
-                    {user?.user?.role === 'SUPER_ADMIN' && (
+                  <div className='pl-4 mt-2 space-y-2'>
+                    {user?.user?.typeUser === 'SUPER_ADMIN' && (
                       <SidebarMenuButton
                         variant={'default'}
                         asChild
@@ -220,7 +226,7 @@ export function AppSidebar() {
                       className='hover:bg-primary/20 hover:text-primary'
                       isActive={pathname === '/dashboard/pelanggan'}>
                       <Link href='/dashboard/pelanggan'>
-                        <User className='h-4 w-4' />
+                        <Users className='h-4 w-4' />
                         <span>Pelanggan</span>
                       </Link>
                     </SidebarMenuButton>

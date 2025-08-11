@@ -3,43 +3,65 @@ import { hashPassword } from 'better-auth/crypto'
 
 const adminSeed = async () => {
   try {
-    const id = crypto.randomUUID()
-    const admin = await prisma.user.findUnique({
-      where: {
-        email: 'admin@matrakosala.com',
+    const email = 'admin@matrakosala.com'
+    const ADMIN_USER_ID = crypto.randomUUID().replace(/-/g, '')
+
+    const user = await prisma.user.upsert({
+      where: { id: ADMIN_USER_ID },
+      update: { updatedAt: new Date() },
+      create: {
+        id: ADMIN_USER_ID,
+        email,
+        name: 'Admin Toko Matra',
+        role: 'ADMIN',
+        typeUser: 'SUPER_ADMIN',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        emailVerified: true,
+        banned: false,
       },
     })
 
-    if (!admin) {
-      const newAdmin = await prisma.user.create({
-        data: {
-          id,
-          email: 'admin@matrakosala.com',
-          name: 'Admin',
-          role: 'SUPER_ADMIN',
-          typeUser: 'SUPER_ADMIN',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          emailVerified: true,
-          banned: false,
-        },
-      })
+    const existingAccount = await prisma.account.findFirst({
+      where: { userId: user.id, providerId: 'credential' },
+    })
+
+    if (!existingAccount) {
       await prisma.account.create({
         data: {
-          id,
-          accountId: newAdmin.id,
+          id: crypto.randomUUID().replace(/-/g, '').replace(/-/g, ''),
+          accountId: user.id,
           providerId: 'credential',
-
           createdAt: new Date(),
           updatedAt: new Date(),
-          userId: newAdmin.id,
+          userId: user.id,
           password: await hashPassword('matrakosala'),
         },
       })
-      console.log('Admin created')
     }
+
+    await prisma.profile.upsert({
+      where: { userId: user.id },
+      update: { updatedAt: new Date() },
+      create: {
+        id_profile: crypto.randomUUID().replace(/-/g, ''),
+        userId: user.id,
+        fullName: 'Admin Matra Kosala Digdaya',
+        email: user.email,
+        userName: 'Admin Toko Matra',
+        // phoneNumber optional to avoid unique conflicts in repeated seeding
+        // dateOfBirth column is @db.VarChar(20), use YYYY-MM-DD to avoid P2000
+        dateOfBirth: new Date().toISOString().slice(0, 10),
+        companyName: 'Matra Kosala Digdaya',
+        taxId: '1234567890',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    })
+
+    console.log('Admin created successfully!')
   } catch (error) {
-    console.log('Admin already exists')
+    console.error('Admin seed error:', error)
   }
 }
 

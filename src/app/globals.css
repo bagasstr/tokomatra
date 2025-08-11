@@ -157,10 +157,10 @@
     @apply text-sm tablet:text-base desktop:text-lg font-semibold;
   }
   h5 {
-    @apply text-xs tablet:text-sm desktop:text-base font-medium;
+    @apply text-sm tablet:text-base desktop:text-lg;
   }
   p {
-    @apply text-sm tablet:text-base desktop:text-base;
+    @apply text-xs tablet:text-sm desktop:text-base;
     @apply leading-relaxed;
   }
 }

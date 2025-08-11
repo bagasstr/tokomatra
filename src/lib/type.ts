@@ -1,22 +1,19 @@
-export interface Profile {
+export interface IProfile {
   data: {
-    id_profile: string
-    fullName: string
-    email: string
-    imageUrl: string
-    userName: string
-    phoneNumber: string
-    gender: string
-    dateOfBirth: string
-    bio: string
-    companyName: string
-    taxId: string
-    updatedAt: Date
-    createdAt: Date
-    users: {
-      id: string
-      email: string
-      name: string
+    profile: {
+      id_profile: string
+      fullName: string
+      email?: string
+      imageUrl: string
+      userName: string
+      phoneNumber: string
+      gender?: string
+      dateOfBirth?: string
+      bio?: string
+      companyName?: string
+      taxId?: string
+      createdAt: Date
+      updatedAt: Date
     }
   }
 }
@@ -27,4 +24,24 @@ export interface Notification {
   message: string | null
   isRead: boolean | null
   createdAt: Date | null
+}
+
+export interface Category {
+  id_category: string
+  name: string
+  slug: string
+  description?: string
+  icon?: string
+  imageUrl?: string
+  isActive: boolean
+  parentId?: string
+  createdAt: string
+  updatedAt: string
+  children?: Category[]
+}
+
+export interface CategorySelectorProps {
+  value?: string
+  onValueChange?: (value: string) => void
+  placeholder?: string
 }

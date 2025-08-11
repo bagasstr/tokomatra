@@ -25,7 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { CloudUpload, Paperclip } from 'lucide-react'
+import { CloudUpload, Image, Paperclip } from 'lucide-react'
 import {
   FileInput,
   FileUploader,
@@ -37,11 +37,13 @@ import { formAddProductSchema } from '@/lib/validation'
 import Link from 'next/link'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
-import { Category, CategorySelector } from '@/components/categorySelector'
+import CategorySelector from '@/components/categorySelector'
+import { Category } from '@/lib/type'
 
 const FormAddProduct = () => {
   const [files, setFiles] = useState<File[] | null>(null)
   const [isUploading, setIsUploading] = useState(false)
+  const [optimisticImages, setOptimisticImages] = useState<string[]>([])
   const router = useRouter()
   const [slugEdited, setSlugEdited] = useState(false)
 
@@ -83,7 +85,6 @@ const FormAddProduct = () => {
       featured: false,
       isActive: true,
     },
-    mode: 'onChange',
   })
 
   const generateSlug = (value: string) => {
@@ -94,26 +95,90 @@ const FormAddProduct = () => {
       .replace(/\s+/g, '-')
   }
 
+  const mutationUploadImage = useMutation({
+    mutationFn: async (
+      file: File
+    ): Promise<{ url: string } | { imageUrl: string }> => {
+      const formData = new FormData()
+      formData.append('file', file)
+      const response = await fetch('/api/uploadProduk', {
+        method: 'POST',
+        body: formData,
+      })
+      if (!response.ok) {
+        throw new Error('Failed to upload image')
+      }
+      return response.json()
+    },
+    onMutate: async (file) => {
+      // Create temporary URL for optimistic update
+      const tempUrl = URL.createObjectURL(file)
+
+      // Add to optimistic images state
+      setOptimisticImages((prev) => [...prev, tempUrl])
+
+      return {
+        tempUrl,
+        fileName: file.name,
+      }
+    },
+    onError: (err, file, context) => {
+      // Remove from optimistic images on error
+      if (context?.tempUrl) {
+        setOptimisticImages((prev) =>
+          prev.filter((url) => url !== context.tempUrl)
+        )
+        URL.revokeObjectURL(context.tempUrl)
+      }
+
+      toast.error(`Failed to upload ${context?.fileName || 'image'}`)
+    },
+    onSuccess: (data, file, context) => {
+      // Replace optimistic URL with real URL
+      if (context?.tempUrl) {
+        const realUrl = 'url' in data ? data.url : data.imageUrl
+        setOptimisticImages((prev) =>
+          prev.map((url) => (url === context.tempUrl ? realUrl : url))
+        )
+        URL.revokeObjectURL(context.tempUrl)
+      }
+
+      toast.success(`${context?.fileName || 'Image'} uploaded successfully`)
+    },
+    onSettled: (data, error, file, context) => {
+      // Always clean up the temporary URL
+      if (context?.tempUrl) {
+        URL.revokeObjectURL(context.tempUrl)
+      }
+    },
+  })
+
   const addAploadImage = async (file: File): Promise<string> => {
-    const formData = new FormData()
-    formData.append('file', file)
-
-    const response = await fetch('/api/uploadProduk', {
-      method: 'POST',
-      body: formData,
-    })
-
-    if (!response.ok) {
-      throw new Error('Failed to upload image')
-    }
-
-    const data = await response.json()
-    return data.url || data.imageUrl // Adjust based on your upload API response
+    const result = await mutationUploadImage.mutateAsync(file)
+    return 'url' in result ? result.url : result.imageUrl
   }
 
   const uploadImages = async (files: File[]): Promise<string[]> => {
-    const uploadPromises = files.map((file) => addAploadImage(file))
-    return Promise.all(uploadPromises)
+    // Start optimistic updates for all files
+    const tempUrls = files.map((file) => URL.createObjectURL(file))
+    setOptimisticImages((prev) => [...prev, ...tempUrls])
+
+    try {
+      const uploadPromises = files.map((file) => addAploadImage(file))
+      const results = await Promise.all(uploadPromises)
+
+      // Clear optimistic images after successful upload
+      setOptimisticImages([])
+
+      return results
+    } catch (error) {
+      // Remove optimistic images on error
+      tempUrls.forEach((url) => {
+        setOptimisticImages((prev) => prev.filter((prevUrl) => prevUrl !== url))
+        URL.revokeObjectURL(url)
+      })
+      throw error
+    }
   }
 
   useEffect(() => {
@@ -124,6 +189,15 @@ const FormAddProduct = () => {
     })
     return () => subscription.unsubscribe()
   }, [form, slugEdited])
+
+  // Cleanup optimistic images on unmount
+  useEffect(() => {
+    return () => {
+      optimisticImages.forEach((url) => {
+        URL.revokeObjectURL(url)
+      })
+    }
+  }, [optimisticImages])
 
   const handleSlugChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSlugEdited(true)
@@ -146,8 +220,6 @@ const FormAddProduct = () => {
           ...values,
           images: imageUrls,
         }
-
-        console.log('Submitting form data:', formDataWithImages)
 
         const response = await fetch('/api/product', {
           method: 'POST',
@@ -272,7 +344,6 @@ const FormAddProduct = () => {
               <FormItem>
                 <FormControl>
                   <CategorySelector
-                    data={categories as Category[]}
                     value={field.value}
                     onValueChange={field.onChange}
                   />
@@ -498,11 +569,21 @@ const FormAddProduct = () => {
                       </div>
                     </FileInput>
                     <FileUploaderContent>
+                      {optimisticImages.length > 0 &&
+                        optimisticImages.map((url, i) => (
+                          <FileUploaderItem key={`optimistic-${i}`} index={i}>
+                            <div className='flex items-center gap-2'>
+                              <div className='animate-spin rounded-full h-4 w-4 border-b-2 border-primary'></div>
+                              <Image className='h-4 w-4 stroke-current' />
+                              <span>Uploading... (Optimistic)</span>
+                            </div>
+                          </FileUploaderItem>
+                        ))}
                       {files &&
                         files.length > 0 &&
                         files.map((file, i) => (
                           <FileUploaderItem key={i} index={i}>
-                            <Paperclip className='h-4 w-4 stroke-current' />
+                            <Image className='h-4 w-4 stroke-current' />
                             <span>{file.name}</span>
                           </FileUploaderItem>
                         ))}

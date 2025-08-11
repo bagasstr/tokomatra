@@ -30,13 +30,13 @@ export const POST = async (req: Request) => {
     const filename = `${randomUUID()}.${ext}`
 
     // Save to public/uploads directory
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'product')
+    const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'brand')
     const filePath = path.join(uploadDir, filename)
 
     await writeFile(filePath, buffer)
 
     // Return the file URL
-    const fileUrl = `/uploads/product/${filename}`
+    const fileUrl = `/uploads/brand/${filename}`
     return NextResponse.json({ url: fileUrl }, { status: 201 })
   } catch (error) {
     console.error('File upload error:', error)
@@ -110,3 +110,8 @@ async function readFileAsync(filePath: string): Promise<Buffer> {
   const { readFile } = await import('fs/promises')
   return readFile(filePath)
 }
+
+/**
+ * Ensures a directory exists, creates it recursively if not.
+ * No external library used.
+ */

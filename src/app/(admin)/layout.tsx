@@ -4,7 +4,7 @@ import { headers } from 'next/headers'
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { AppSidebar } from '@/components/ui/appSidebar'
 import { redirect } from 'next/navigation'
-import { toast } from 'sonner'
+import UserNav from '@/components/admin/user-nav'
 
 export default async function AdminLayout({
   children,
@@ -17,7 +17,10 @@ export default async function AdminLayout({
   })
 
   // Periksa apakah pengguna adalah super admin atau admin
-  if (session?.user.role !== 'SUPER_ADMIN' && session?.user.role !== 'ADMIN') {
+  if (
+    session?.user.typeUser !== 'SUPER_ADMIN' &&
+    session?.user.typeUser !== 'ADMIN'
+  ) {
     redirect('/login-admin')
   }
 
@@ -28,7 +31,7 @@ export default async function AdminLayout({
       <main className='container-desktop'>
         <header className={cn('py-4 flex items-center justify-between')}>
           <SidebarTrigger />
-          {/* <UserNav session={session} /> */}
+          <UserNav />
         </header>
         {children}
       </main>

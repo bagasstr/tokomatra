@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "seed": "ts-node -P tsconfig-seed.json categorySeed.ts",
+    "seed": "ts-node -P tsconfig-seed.json adminSeed.ts",
     "reset": "prisma migrate reset",
     "migrate": "prisma migrate dev",
     "generate": "prisma generate",

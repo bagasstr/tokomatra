@@ -23,37 +23,93 @@ export const GET = async (req: Request) => {
     const limit = parseInt(searchParams.get('limit') || '10')
     const skip = (page - 1) * limit
 
-    // Hitung total data
-    const totalCategories = await prisma.categories.count()
+    // Jika ada parameter page dan limit, gunakan pagination untuk semua kategori
+    if (searchParams.has('page') || searchParams.has('limit')) {
+      // Hitung total data
+      const totalCategories = await prisma.categories.count()
 
-    // Ambil data paginasi
-    const categories = await prisma.categories.findMany({
-      where: {
-        parentId: null, // Only get root categories
-      },
-      include: {
-        children: {
-          include: {
-            children: true,
+      // Ambil data paginasi
+      const categories = await prisma.categories.findMany({
+        select: {
+          id_category: true,
+          name: true,
+          slug: true,
+          parentId: true,
+          categories: {
+            select: {
+              id_category: true,
+              name: true,
+              slug: true,
+            },
+          },
+          children: {
+            select: {
+              id_category: true,
+              name: true,
+              slug: true,
+              parentId: true,
+              children: {
+                select: {
+                  id_category: true,
+                  name: true,
+                  slug: true,
+                  parentId: true,
+                },
+              },
+            },
           },
         },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-      skip,
-      take: limit,
-    })
+        orderBy: [{ name: 'asc' }, { parentId: 'asc' }],
+        skip,
+        take: limit,
+      })
 
-    const totalPages = Math.ceil(totalCategories / limit)
+      const totalPages = Math.ceil(totalCategories / limit)
 
-    // Jika page melebihi totalPages, return 404
-    if (page > totalPages) {
-      return NextResponse.json({ message: 'Page not found' }, { status: 404 })
+      // Jika page melebihi totalPages, return 404
+      if (page > totalPages) {
+        return NextResponse.json({ message: 'Page not found' }, { status: 404 })
+      }
+
+      return NextResponse.json(categories)
+    } else {
+      // Jika tidak ada pagination, ambil hanya parent categories dengan children
+      const parentCategories = await prisma.categories.findMany({
+        where: {
+          parentId: null, // Hanya ambil parent categories
+        },
+        select: {
+          id_category: true,
+          name: true,
+          slug: true,
+          parentId: true,
+          children: {
+            select: {
+              id_category: true,
+              name: true,
+              slug: true,
+              parentId: true,
+              children: {
+                select: {
+                  id_category: true,
+                  name: true,
+                  slug: true,
+                  parentId: true,
+                },
+              },
+            },
+            orderBy: {
+              name: 'asc',
+            },
+          },
+        },
+        orderBy: {
+          name: 'asc',
+        },
+      })
+
+      return NextResponse.json(parentCategories)
     }
-
-    // Tetap return data walaupun categories kosong
-    return NextResponse.json(categories)
   } catch (error) {
     console.error('[GET_CATEGORIES]', error)
     return NextResponse.json(
